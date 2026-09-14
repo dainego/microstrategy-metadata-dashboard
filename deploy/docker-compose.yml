@@ -1,0 +1,24 @@
+name: microstrategy-metadata-dashboard
+
+services:
+  dashboard:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      - catalog-agent
+    restart: unless-stopped
+
+  catalog-agent:
+    build:
+      context: ..
+      dockerfile: agent/Dockerfile
+    env_file:
+      # El archivo real está en la raíz del repositorio y debe estar ignorado por Git.
+      - ../.env
+    environment:
+      GOOGLE_GENAI_USE_VERTEXAI: "FALSE"
+      CATALOG_PATH: /app/catalog/catalog.json
+    restart: unless-stopped
