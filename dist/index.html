@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Metadata MicroStrategy · Modelos y relaciones</title>
+<meta name="description" content="Explorá modelos, submodelos, tablas, atributos, facts, métricas y filtros de MicroStrategy.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230e2236'/%3E%3Cpath d='M8 23V9l8 7 8-7v14' fill='none' stroke='%235eead4' stroke-width='3'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="./style.css">
+<link rel="stylesheet" href="./logical.css">
+<link rel="stylesheet" href="./agent.css">
+<script src="./app.js" defer></script>
+<script src="./logical.js" defer></script>
+<script src="./agent.js" defer></script>
+</head>
+<body>
+<header class="topbar"><a href="./" class="brand"><span class="brand-mark">M</span><span>Metadata <strong>MicroStrategy</strong></span></a><span class="edition">CATÁLOGO DE DATOS</span></header>
+<main>
+<section class="overview" aria-labelledby="title"><div class="heading"><div><p class="eyebrow">MODELOS Y RELACIONES</p><h1 id="title">Explorador de metadata</h1></div><span id="total" class="total">Cargando catálogo…</span></div>
+<div class="overview-grid"><div class="kpi"><span class="kpi-icon">▦</span><div><p>Modelos</p><strong id="models">—</strong><span>en todo el catálogo</span></div></div><div class="kpi"><span class="kpi-icon sub">↳</span><div><p>Submodelos</p><strong id="submodels">—</strong><span>rutas únicas · todos los niveles</span></div></div><div class="guide"><p>RECORRÉ LAS RELACIONES</p><div><span>01 <b>Modelo</b></span><i>›</i><span>02 <b>Tabla</b></span><i>›</i><span>03 <b>Métrica</b></span><i>›</i><span>04 <b>Filtro</b></span></div><small>Explorá atributos y facts para seguir sus conexiones.</small></div></div></section>
+<div id="error" role="alert" hidden></div>
+<nav class="section-switch" aria-label="Secciones del tablero">
+<button id="sectionCatalog" data-section="catalog" aria-pressed="true" aria-controls="catalogView">▦ <span>Catálogo de objetos</span></button>
+<button id="sectionLogical" data-section="logical" aria-pressed="false" aria-controls="logicalView">⌘ <span>Modelos lógicos</span><span id="logicalTotal" class="section-counter">—</span></button>
+</nav>
+<section id="catalogView" class="workspace" aria-label="Navegación del catálogo">
+<aside class="tree-panel"><div class="panel-label"><h2>Modelos y submodelos</h2><button class="text-button" id="resetScope">Ver todos</button></div><label class="search tree-search"><span aria-hidden="true">⌕</span><input id="modelSearch" placeholder="Buscar un modelo o submodelo" aria-label="Buscar un modelo o submodelo" type="search"></label><nav id="tree" aria-label="Jerarquía de modelos"><p class="loading">Preparando modelos…</p></nav><div class="tree-footer">Una misma ruta reúne los cuatro tipos de objeto.</div></aside>
+<div class="catalog-panel"><div class="scope-bar"><div id="breadcrumbs" aria-label="Ubicación actual">Todos los modelos</div><span id="scopeCount"></span></div>
+<div class="catalog-tools"><div><h2 id="listTitle">Tablas y objetos</h2><p id="listHint">Seleccioná una tabla para ver sus atributos y facts.</p></div><label class="search object-search"><span aria-hidden="true">⌕</span><input id="objectSearch" type="search" placeholder="Buscar nombre, ID o expresión" aria-label="Buscar objetos por nombre, ID o expresión"></label></div>
+<div id="tabs" class="tabs" role="tablist" aria-label="Tipo de objeto"></div>
+<div class="results-top"><span id="resultCount" aria-live="polite">Cargando datos…</span><span class="secondary">Objetos únicos</span></div>
+<div id="results" class="results" aria-live="polite"><div class="loading">Cargando las definiciones del catálogo…</div></div><div id="pagination" class="pagination"></div>
+</div></section>
+<section id="logicalView" class="logical-view" aria-labelledby="logicalTitle" hidden>
+<div class="logical-heading"><div><p class="eyebrow">MODELO EN ESTRELLA</p><h2 id="logicalTitle">Modelos lógicos</h2><p>Elegí una tabla de hechos para explorar sus medidas y atributos.</p></div><span id="logicalAvailable" class="logical-available"></span></div>
+<div class="logical-selectors">
+<label>Modelo<select id="logicalModel" aria-label="Filtrar tablas por modelo"><option value="">Todos los modelos</option></select></label>
+<label>Buscar tabla<input id="logicalTableSearch" type="search" placeholder="Nombre de tabla F_" aria-label="Buscar tabla de hechos"></label>
+<label class="table-selector">Tabla de hechos<select id="logicalTable" aria-label="Seleccionar tabla de hechos"></select></label>
+</div>
+<div id="logicalSummary" class="logical-summary" aria-live="polite"></div>
+<div class="logical-toolbar"><label class="search"><span aria-hidden="true">⌕</span><input id="logicalAttributeSearch" type="search" placeholder="Buscar atributo o tabla D_" aria-label="Filtrar atributos del diagrama"></label><span id="logicalShown" class="logical-shown"></span><div class="zoom-controls" aria-label="Controles del diagrama"><button data-zoom="out" aria-label="Alejar">−</button><span id="logicalZoom">100%</span><button data-zoom="in" aria-label="Acercar">+</button><button data-zoom="fit">Ajustar</button><button data-zoom="center">Centrar fact</button></div></div>
+<div id="logicalViewport" class="logical-viewport" tabindex="0" role="region" aria-label="Diagrama lógico. Usá las barras de desplazamiento o arrastrá el fondo para recorrerlo."><div id="logicalSizer" class="logical-sizer"><div id="logicalCanvas" class="logical-canvas"></div></div></div>
+<div class="logical-legend"><span><i class="legend-fact"></i>Tabla F_ · hechos y métricas</span><span><i class="legend-dimension"></i>Atributo · tablas D_ referenciadas</span><span>Arrastrá el fondo o usá las barras para recorrer el modelo.</span></div>
+<p class="logical-footnote">Las conexiones representan asociaciones de metadata, sin claves de unión ni cardinalidades SQL. Las métricas se relacionan por sus fórmulas; los candidatos ambiguos se muestran por separado.</p>
+</section>
+<footer class="footer"><span>Metadata MicroStrategy</span><span>Modelos y submodelos consolidados de los cuatro archivos.</span></footer>
+</main>
+<div id="backdrop" class="backdrop" hidden></div><aside id="inspector" class="inspector" role="dialog" aria-modal="true" aria-label="Detalle del objeto" hidden tabindex="-1"></aside>
+<button id="catalogAgentToggle" class="catalog-agent-toggle" type="button" aria-controls="catalogAgent" aria-expanded="false"><span aria-hidden="true">✦</span><span>Preguntale al catálogo</span></button>
+<aside id="catalogAgent" class="catalog-agent" aria-label="Asistente del catálogo" hidden>
+<div class="catalog-agent-head"><div><h2>Asistente del catálogo</h2><p>Consultá objetos, tablas, fórmulas, filtros y modelos.</p></div><button id="catalogAgentClose" class="catalog-agent-close" type="button" aria-label="Cerrar asistente">×</button></div>
+<div id="catalogAgentMessages" class="catalog-agent-messages" aria-live="polite"><article class="catalog-agent-message" data-role="assistant">Hola. Puedo buscar metadata en el catálogo cargado. Por ejemplo: “¿En qué tabla se usa Acceso IVR?”</article></div>
+<form id="catalogAgentForm" class="catalog-agent-form"><textarea id="catalogAgentQuestion" maxlength="2000" rows="2" placeholder="Escribí una pregunta sobre el catálogo" aria-label="Pregunta para el asistente"></textarea><button id="catalogAgentSend" type="submit">Enviar</button></form>
+</aside>
+</body></html>
