@@ -34,6 +34,12 @@ Abrí [http://localhost:8000/](http://localhost:8000/) en el navegador. Mantené
 
 Este comando requiere Python 3 y sirve para probarlo localmente. Para publicarlo, usá el servidor o hosting del apartado anterior. Abrir `index.html` con doble clic puede impedir que el navegador cargue el JSON; accedé mediante HTTP o HTTPS.
 
+## Con Docker
+docker compose -f deploy/docker-compose.yml down
+docker compose -f deploy/docker-compose.yml build --no-cache
+docker compose -f deploy/docker-compose.yml up -d
+pagina queda disponible en --> http://localhost:8080
+
 ## Datos y funcionalidades incluidos
 
 - 24 modelos y 1.474 submodelos, contabilizados por su ruta jerárquica.
@@ -69,6 +75,4 @@ Opcionalmente, podés elegir otro archivo de salida:
 python scripts/prepare-data.py "C:\ruta\a\results" --output "C:\ruta\a\catalog.json"
 ```
 
-## Acceso al tablero
 
-Esta exportación no incorpora el control de acceso de ChatGPT. Los permisos se configuran en el servidor o hosting donde la publiques. Cada visitante autorizado a cargar la página recibe el catálogo completo; los filtros del tablero sirven para navegar y no restringen el acceso a los datos.
