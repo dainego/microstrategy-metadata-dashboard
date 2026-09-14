@@ -1,0 +1,2 @@
+# ADK incluye el cliente de Gemini que utiliza GOOGLE_API_KEY.
+google-adk==2.2.0

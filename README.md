@@ -35,7 +35,7 @@ Abrí [http://localhost:8000/](http://localhost:8000/) en el navegador. Mantené
 Este comando requiere Python 3 y sirve para probarlo localmente. Para publicarlo, usá el servidor o hosting del apartado anterior. Abrir `index.html` con doble clic puede impedir que el navegador cargue el JSON; accedé mediante HTTP o HTTPS.
 
 ## Con Docker
-docker compose -f deploy/docker-compose.yml down
+docker compose -f deploy/docker-compose.yml down --remove-orphans
 docker compose -f deploy/docker-compose.yml build --no-cache
 docker compose -f deploy/docker-compose.yml up -d
 pagina queda disponible en --> http://localhost:8080
@@ -75,4 +75,62 @@ Opcionalmente, podés elegir otro archivo de salida:
 python scripts/prepare-data.py "C:\ruta\a\results" --output "C:\ruta\a\catalog.json"
 ```
 
+# Integración del agente ADK en el tablero
+
+Este paquete contiene los archivos para incorporar un asistente de Google ADK
+que responde sobre `catalog.json` sin exponer `GOOGLE_API_KEY` al navegador.
+
+## Destino de los archivos
+
+| Archivo de este paquete | Destino en el repositorio del tablero |
+| --- | --- |
+| `agent/` | `agent/` |
+| `deploy/Dockerfile` | `deploy/Dockerfile` |
+| `deploy/docker-compose.yml` | `deploy/docker-compose.yml` |
+| `deploy/nginx.conf` | `deploy/nginx.conf` |
+| `dist/index.html`, `dist/app.js` | `dist/index.html`, `dist/app.js` |
+| `dist/agent.js`, `dist/agent.css` | `dist/agent.js`, `dist/agent.css` |
+| `.env.example` | `.env.example` |
+
+Agregá `.env` a `.gitignore` y crealo en la raíz del repositorio con:
+
+```dotenv
+GOOGLE_API_KEY=tu_clave_real
+GOOGLE_GENAI_USE_VERTEXAI=FALSE
+MODEL_NAME=gemini-flash-latest
+```
+
+No publiques ni compartas la clave. El servicio `catalog-agent` recibe el
+valor desde Docker Compose; el JavaScript solo llama a `/agent/` en el mismo
+origen del tablero.
+
+## Arranque local
+
+Desde la raíz del repositorio:
+
+```powershell
+Copy-Item .env.example .env
+# Editá .env y pegá la clave real.
+docker compose -f deploy/docker-compose.yml up --build -d
+docker compose -f deploy/docker-compose.yml logs -f catalog-agent
+```
+
+Abrí `http://localhost:8080` y usá el botón **Preguntale al catálogo**.
+
+Para comprobar que ADK descubrió el agente:
+
+```powershell
+Invoke-RestMethod http://localhost:8080/agent/list-apps
+```
+
+La salida debería incluir `catalog_agent`.
+
+## Seguridad y alcance de esta primera versión
+
+- La clave no queda dentro de la imagen, en Git ni en el navegador.
+- El catálogo se copia en la imagen del agente durante el build. Al cambiar
+  `dist/catalog.json`, ejecutá nuevamente `docker compose ... up --build -d`.
+- Las sesiones son de memoria y se pierden si se reinicia `catalog-agent`.
+- No hay autenticación ni límite de solicitudes. Para publicar fuera de una
+  red local, agregá autenticación delante de `/agent/` y rate limiting.
 
