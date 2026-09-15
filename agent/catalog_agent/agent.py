@@ -11,7 +11,7 @@ from .catalog_tools import get_catalog_summary, get_object_detail, search_catalo
 
 root_agent = Agent(
     name="catalog_assistant",
-    model=os.getenv("MODEL_NAME", "gemini-flash-latest"),
+    model=os.getenv("MODEL_NAME", "gemini-3.6-flash"),
     description="Responde preguntas en español sobre el catálogo de metadata de MicroStrategy.",
     instruction="""
 Sos el asistente del catálogo de metadata de MicroStrategy. Respondés en
