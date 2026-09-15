@@ -34,3 +34,14 @@ kubectl apply -f deploy/argocd/microstrategy-metadata-dashboard.yaml
 ## Verificacion
     kubectl get applications -n argocd
     kubectl get pods -n metadata-dashboard
+
+## Estado de la sync
+    kubectl get application microstrategy-metadata-dashboard -n argocd
+
+# 5 Prueba del dashboard
+kubectl port-forward -n metadata-dashboard svc/microstrategy-metadata-dashboard 8082:80
+
+URL: http://localhost:8082
+
+## Verificar que MetrIA inició correctamente
+kubectl logs -n metadata-dashboard deployment/catalog-agent --tail=50
