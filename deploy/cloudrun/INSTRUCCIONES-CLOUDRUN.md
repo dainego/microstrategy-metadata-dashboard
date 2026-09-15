@@ -67,3 +67,16 @@ gcloud projects add-iam-policy-binding big-data-movistar `
   * Artifact Registry las almacena
   * Despliega un único servicio público de Cloud Run.
   * Muestra la URL pública HTTPS al terminar.
+
+# Para confirmar la nueva versión
+gcloud run revisions list `
+  --service=metria-dashboard `
+  --region=southamerica-east1
+
+# Para conocer la URL externa
+gcloud run services describe metria-dashboard `
+  --region=southamerica-east1 `
+  --format="value(status.url)"
+
+  URL Ejemplo: https://metria-dashboard-z7enknj5za-rj.a.run.app
+  
