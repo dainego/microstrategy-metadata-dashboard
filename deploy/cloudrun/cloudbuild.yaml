@@ -1,0 +1,22 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --file
+      - deploy/cloudrun/Dockerfile
+      - --tag
+      - ${_DASHBOARD_IMAGE}
+      - .
+
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --file
+      - agent/Dockerfile
+      - --tag
+      - ${_AGENT_IMAGE}
+      - .
+
+images:
+  - ${_DASHBOARD_IMAGE}
+  - ${_AGENT_IMAGE}
