@@ -2,6 +2,17 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - deployment.yaml
+  - dashboard-deployment.yaml
   - service.yaml
-  - httproute.yaml
+  - catalog-agent-deployment.yaml
+  - catalog-agent-service.yaml
+
+# HTTPRoute queda fuera de esta base local: requiere un Gateway API ya instalado
+# y valores propios del entorno corporativo.
+images:
+  - name: dashboard-image
+    newName: ghcr.io/dainego/microstrategy-metadata-dashboard-dashboard
+    newTag: latest
+  - name: catalog-agent-image
+    newName: ghcr.io/dainego/microstrategy-metadata-dashboard-agent
+    newTag: latest

@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog-agent
+  labels:
+    app: catalog-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: catalog-agent
+  template:
+    metadata:
+      labels:
+        app: catalog-agent
+    spec:
+      containers:
+        - name: catalog-agent
+          image: catalog-agent-image
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            - name: GOOGLE_GENAI_USE_VERTEXAI
+              value: "FALSE"
+            - name: CATALOG_PATH
+              value: /app/catalog/catalog.json
+            - name: GOOGLE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: metria-google-api
+                  key: GOOGLE_API_KEY
+          readinessProbe:
+            tcpSocket:
+              port: http
+          livenessProbe:
+            tcpSocket:
+              port: http

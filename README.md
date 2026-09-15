@@ -134,3 +134,17 @@ La salida debería incluir `catalog_agent`.
 - No hay autenticación ni límite de solicitudes. Para publicar fuera de una
   red local, agregá autenticación delante de `/agent/` y rate limiting.
 
+## Estructura de archivos
+
+microstrategy-metadata-dashboard/
+├── agent/
+│   ├── Dockerfile                 # Construye la imagen de MetrIA
+│   └── catalog_agent/             # Código Python del agente
+│
+├── deploy/
+│   ├── Dockerfile                 # Construye la imagen del dashboard Nginx
+│   ├── docker-compose.yml         # Levanta dashboard + MetrIA localmente
+│   ├── nginx.conf                 # Configura Nginx y el proxy hacia MetrIA
+│   └── kubernetes/                # Manifiestos para despliegue corporativo
+│
+└── dist/                          # Archivos estáticos del dashboard
