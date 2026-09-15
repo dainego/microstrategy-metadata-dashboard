@@ -1,3 +1,16 @@
+# Estructura de despliegue 
+agent/
+├── Dockerfile                 # Imagen de MetrIA
+├── requirements.txt
+└── catalog_agent/             # Código Python del agente
+
+deploy/
+├── Dockerfile                 # Imagen del dashboard con Nginx
+├── docker-compose.yml         # Ejecución local: dashboard + agente
+├── nginx.conf                 # Nginx entrega el tablero y deriva /agent
+├── kubernetes/                # Deployments, Services y Kustomize
+└── argocd/                    # Application que le indica a Argo qué sincronizar
+
 # 1 Crear Namespace
 kubectl create namespace metadata-dashboard --dry-run=client -o yaml | kubectl apply -f -
 
