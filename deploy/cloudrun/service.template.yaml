@@ -19,15 +19,23 @@ spec:
         # El primer contenedor recibe el tráfico público de Cloud Run.
         - name: dashboard
           image: DASHBOARD_IMAGE
+          dependsOn:
+            - catalog-agent
           ports:
             - containerPort: 8080
           resources:
             limits:
               cpu: "1"
-              memory: 256Mi
+              memory: 256Mi        
         # Este contenedor solo es accesible desde Nginx por localhost:8000.
         - name: catalog-agent
           image: AGENT_IMAGE
+          startupProbe:
+            tcpSocket:
+              port: 8000
+            periodSeconds: 3
+            timeoutSeconds: 1
+            failureThreshold: 10
           env:
             - name: GOOGLE_GENAI_USE_VERTEXAI
               value: "FALSE"
@@ -42,3 +50,4 @@ spec:
             limits:
               cpu: "1"
               memory: 1Gi
+          
