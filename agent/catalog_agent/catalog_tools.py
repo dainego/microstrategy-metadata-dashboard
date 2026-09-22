@@ -200,7 +200,7 @@ def search_catalog(
     y ``table`` son filtros opcionales por nombre. Devuelve evidencia acotada;
     no inventes información que no esté en la respuesta.
     """
-
+    logger = logging.getLogger(__name__)
     start = time.perf_counter()
     logger.info("search_catalog - INICIO")
 
@@ -261,7 +261,7 @@ def get_object_detail(key: str) -> dict[str, Any]:
     Úsala cuando necesites responder sobre fórmulas, calificaciones, tablas,
     ubicaciones o relaciones de un objeto específico. No inventes una clave.
     """
-
+    logger = logging.getLogger(__name__)
     start = time.perf_counter()
     logger.info("get_object_detail - INICIO")
 
@@ -291,7 +291,7 @@ def get_object_detail(key: str) -> dict[str, Any]:
 
 def get_catalog_summary() -> dict[str, Any]:
     """Devuelve conteos globales del catálogo para preguntas de resumen."""
-
+    logger = logging.getLogger(__name__)
     start = time.perf_counter()
     logger.info("get_catalog_summary - INICIO")
     try:
