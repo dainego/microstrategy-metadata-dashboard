@@ -1,15 +1,7 @@
 # Tablero Metadata MicroStrategy
 
-Exportación del tablero con el catálogo de objetos y la sección de modelos lógicos. Los archivos son editables y funcionan fuera de ChatGPT.
 
 ## Publicarlo en un servidor o hosting
-
-1. Descomprimí el ZIP.
-2. Subí **todo el contenido de `dist`** al directorio público de tu servidor o hosting para páginas estáticas. Los seis archivos deben quedar juntos.
-3. Configurá `index.html` como documento de inicio. Si el hosting solicita un directorio de publicación, indicá `dist`; no hace falta ejecutar un comando de compilación.
-4. Abrí la dirección HTTP o HTTPS que te asigne el servidor. Si lo publicás dentro de una subcarpeta, accedé con la barra final, por ejemplo `https://tu-servidor/metadata/`.
-
-La página puede publicarse en la raíz de un dominio o en una subcarpeta. No necesita Node.js, una base de datos, FastAPI ni conexión con MicroStrategy para consultar los datos incluidos.
 
 | Archivo para publicar | Contenido |
 | --- | --- |
@@ -74,6 +66,28 @@ Opcionalmente, podés elegir otro archivo de salida:
 ```powershell
 python scripts/prepare-data.py "C:\ruta\a\results" --output "C:\ruta\a\catalog.json"
 ```
+
+                        MicroStrategy
+                              │
+                              ▼
+                    flat_*.json / metadata
+                              │
+                              ▼
+                     prepare-data.py
+                              │
+                              ▼
+                       catalog.json
+                              │
+                ┌─────────────┴─────────────┐
+                │                           │
+                ▼                           ▼
+        Dashboard estático            catalog-agent
+             Nginx                  Google ADK / Python
+                │                           │
+                │                           ▼
+                │                       Gemini
+                │
+                └────── /agent/ ───────────┘
 
 # Integración del agente ADK en el tablero
 
