@@ -10,7 +10,7 @@ import json
 import os
 import re
 import unicodedata
-import logger
+import logging
 import time
 from functools import lru_cache
 from pathlib import Path

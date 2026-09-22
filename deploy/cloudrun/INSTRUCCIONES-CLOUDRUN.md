@@ -78,5 +78,4 @@ gcloud run services describe metria-dashboard `
   --region=southamerica-east1 `
   --format="value(status.url)"
 
-  URL Ejemplo: URL: https://metria-dashboard-1087876736655.southamerica-east1.run.app
-  
+  URL Ejemplo: URL: https://metria-dashboard-z7enknj5za-rj.a.run.app
