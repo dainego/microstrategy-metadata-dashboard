@@ -10,6 +10,8 @@ import json
 import os
 import re
 import unicodedata
+import logger
+import time
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -198,50 +200,60 @@ def search_catalog(
     y ``table`` son filtros opcionales por nombre. Devuelve evidencia acotada;
     no inventes información que no esté en la respuesta.
     """
-    if not isinstance(query, str) or not query.strip():
-        return {"status": "error", "message": "La consulta debe contener texto."}
-    if object_type is not None and object_type not in VALID_OBJECT_TYPES:
-        return {
-            "status": "error",
-            "message": "object_type debe ser attribute, fact, metric, filter o table.",
-        }
+
+    start = time.perf_counter()
+    logger.info("search_catalog - INICIO")
 
     try:
-        data = _catalog()
-    except (OSError, json.JSONDecodeError) as error:
+        if not isinstance(query, str) or not query.strip():
+            return {"status": "error", "message": "La consulta debe contener texto."}
+        if object_type is not None and object_type not in VALID_OBJECT_TYPES:
+            return {
+                "status": "error",
+                "message": "object_type debe ser attribute, fact, metric, filter o table.",
+            }
+
+        try:
+            data = _catalog()
+        except (OSError, json.JSONDecodeError) as error:
+            return {
+                "status": "error",
+                "message": f"No se pudo leer catalog.json ({type(error).__name__}).",
+            }
+
+        max_results = max(1, min(int(limit), 12))
+        candidates = [*data.get("objects", []), *data.get("tables", [])]
+        matches: list[tuple[int, dict[str, Any]]] = []
+        for item in candidates:
+            item_type = item.get("type", "table")
+            if object_type and item_type != object_type:
+                continue
+            if not _matches_filter(model, _path_values(item)):
+                continue
+            if not _matches_filter(table, _table_names(data, item) + [item.get("name", "")]):
+                continue
+            score = _score_item(data, item, query)
+            if score:
+                matches.append((score, item))
+
+        matches.sort(key=lambda pair: (-pair[0], _normalize(pair[1].get("name"))))
+        results = [_compact_object(data, item) for _, item in matches[:max_results]]
         return {
-            "status": "error",
-            "message": f"No se pudo leer catalog.json ({type(error).__name__}).",
+            "status": "ok",
+            "query": query,
+            "returned": len(results),
+            "matches": results,
+            "note": (
+                "Las relaciones corresponden a las confirmadas en catalog.json; "
+                "una ausencia no prueba que la relación no exista en MicroStrategy."
+            ),
         }
-
-    max_results = max(1, min(int(limit), 12))
-    candidates = [*data.get("objects", []), *data.get("tables", [])]
-    matches: list[tuple[int, dict[str, Any]]] = []
-    for item in candidates:
-        item_type = item.get("type", "table")
-        if object_type and item_type != object_type:
-            continue
-        if not _matches_filter(model, _path_values(item)):
-            continue
-        if not _matches_filter(table, _table_names(data, item) + [item.get("name", "")]):
-            continue
-        score = _score_item(data, item, query)
-        if score:
-            matches.append((score, item))
-
-    matches.sort(key=lambda pair: (-pair[0], _normalize(pair[1].get("name"))))
-    results = [_compact_object(data, item) for _, item in matches[:max_results]]
-    return {
-        "status": "ok",
-        "query": query,
-        "returned": len(results),
-        "matches": results,
-        "note": (
-            "Las relaciones corresponden a las confirmadas en catalog.json; "
-            "una ausencia no prueba que la relación no exista en MicroStrategy."
-        ),
-    }
-
+    finally:
+        elapsed = time.perf_counter() - start
+        logger.info(
+            "[TOOL] search_catalog - FIN - duración=%.3fs",
+            elapsed,
+        )
 
 def get_object_detail(key: str) -> dict[str, Any]:
     """Obtiene el detalle de un objeto por la clave exacta devuelta por search_catalog.
@@ -249,42 +261,64 @@ def get_object_detail(key: str) -> dict[str, Any]:
     Úsala cuando necesites responder sobre fórmulas, calificaciones, tablas,
     ubicaciones o relaciones de un objeto específico. No inventes una clave.
     """
-    if not isinstance(key, str) or not key.strip():
-        return {"status": "error", "message": "La clave del objeto es obligatoria."}
+
+    start = time.perf_counter()
+    logger.info("get_object_detail - INICIO")
+
     try:
-        data = _catalog()
-    except (OSError, json.JSONDecodeError) as error:
-        return {
-            "status": "error",
-            "message": f"No se pudo leer catalog.json ({type(error).__name__}).",
-        }
 
-    item = _object_by_key(data).get(key)
-    if item is None:
-        return {"status": "not_found", "message": "No existe un objeto con esa clave."}
-    return {"status": "ok", "object": _compact_object(data, item)}
+        if not isinstance(key, str) or not key.strip():
+            return {"status": "error", "message": "La clave del objeto es obligatoria."}
+        try:
+            data = _catalog()
+        except (OSError, json.JSONDecodeError) as error:
+            return {
+                "status": "error",
+                "message": f"No se pudo leer catalog.json ({type(error).__name__}).",
+            }
 
+        item = _object_by_key(data).get(key)
+        if item is None:
+            return {"status": "not_found", "message": "No existe un objeto con esa clave."}
+        return {"status": "ok", "object": _compact_object(data, item)}
+
+    finally:
+        elapsed = time.perf_counter() - start
+        logger.info(
+            "get_object_detail - FIN - duración=%.3fs",
+            elapsed,
+        )
 
 def get_catalog_summary() -> dict[str, Any]:
     """Devuelve conteos globales del catálogo para preguntas de resumen."""
-    try:
-        data = _catalog()
-    except (OSError, json.JSONDecodeError) as error:
-        return {
-            "status": "error",
-            "message": f"No se pudo leer catalog.json ({type(error).__name__}).",
-        }
 
-    stats = data.get("stats", {})
-    objects = data.get("objects", [])
-    return {
-        "status": "ok",
-        "objects": stats.get("objects", len(objects)),
-        "tables": len(data.get("tables", [])),
-        "models": stats.get("models"),
-        "submodels": stats.get("submodels"),
-        "by_type": {
-            object_type: sum(1 for item in objects if item.get("type") == object_type)
-            for object_type in ("attribute", "fact", "metric", "filter")
-        },
-    }
+    start = time.perf_counter()
+    logger.info("get_catalog_summary - INICIO")
+    try:
+        try:
+            data = _catalog()
+        except (OSError, json.JSONDecodeError) as error:
+            return {
+                "status": "error",
+                "message": f"No se pudo leer catalog.json ({type(error).__name__}).",
+            }
+
+        stats = data.get("stats", {})
+        objects = data.get("objects", [])
+        return {
+            "status": "ok",
+            "objects": stats.get("objects", len(objects)),
+            "tables": len(data.get("tables", [])),
+            "models": stats.get("models"),
+            "submodels": stats.get("submodels"),
+            "by_type": {
+                object_type: sum(1 for item in objects if item.get("type") == object_type)
+                for object_type in ("attribute", "fact", "metric", "filter")
+            },
+        }
+    finally:
+        elapsed = time.perf_counter() - start
+        logger.info(
+        "[TOOL] search_catalog - FIN - duración=%.3fs",
+        elapsed,
+        )
