@@ -245,20 +245,46 @@ def search_catalog(
         max_results = max(1, min(int(limit), 12))
         candidates = [*data.get("objects", []), *data.get("tables", [])]
         matches: list[tuple[int, dict[str, Any]]] = []
+
+        t_scoring = time.perf_counter()
+
         for item in candidates:
             item_type = item.get("type", "table")
             if object_type and item_type != object_type:
                 continue
             if not _matches_filter(model, _path_values(item)):
                 continue
-            if not _matches_filter(table, _table_names(data, item) + [item.get("name", "")]):
+            if not _matches_filter(
+                table,
+                _table_names(data, item) + [item.get("name", "")]
+            ):
                 continue
+
             score = _score_item(data, item, query)
             if score:
                 matches.append((score, item))
 
-        matches.sort(key=lambda pair: (-pair[0], _normalize(pair[1].get("name"))))
-        results = [_compact_object(data, item) for _, item in matches[:max_results]]
+        logger.info(
+            "[PERF] search_catalog - scoring = %.3fs",
+            time.perf_counter() - t_scoring,
+        )
+
+        matches.sort(
+            key=lambda pair: (-pair[0], _normalize(pair[1].get("name")))
+        )
+
+        t_compact = time.perf_counter()
+
+        results = [
+            _compact_object(data, item)
+            for _, item in matches[:max_results]
+        ]
+
+        logger.info(
+            "[PERF] search_catalog - compact = %.3fs",
+            time.perf_counter() - t_compact,
+        ) 
+
         return {
             "status": "ok",
             "query": query,
