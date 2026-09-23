@@ -46,6 +46,22 @@ def _catalog() -> dict[str, Any]:
     with CATALOG_PATH.open(encoding="utf-8") as file:
         return json.load(file)
 
+@lru_cache(maxsize=1)
+def _tables_by_object_key() -> dict[str, list[str]]:
+    """Índice de tablas por clave de objeto."""
+    data = _catalog()
+    index: dict[str, list[str]] = {}
+
+    for table in data.get("tables", []):
+        table_name = table.get("name", "")
+        
+        for key in table.get("attribute", []):
+            index.setdefault(key, []).append(table_name)
+
+        for key in table.get("fact", []):
+            index.setdefault(key, []).append(table_name)
+
+    return index
 
 def _object_by_key(data: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return {
@@ -86,13 +102,14 @@ def _relationship_names(
     return result
 
 
-def _table_names(data: dict[str, Any], item: dict[str, Any]) -> list[str]:
+def _table_names(data, item):
     """Obtiene las tablas declaradas en filas y en asociaciones de tabla."""
     names = _row_values(item, "tableName")
     key = item.get("key")
-    for table in data.get("tables", []):
-        if key and key in [*table.get("attribute", []), *table.get("fact", [])]:
-            names.append(table.get("name", ""))
+
+    if key:
+        names.extend(_tables_by_object_key().get(key, []))
+
     return _unique(names)
 
 
@@ -202,7 +219,7 @@ def search_catalog(
     """
     logger = logging.getLogger(__name__)
     start = time.perf_counter()
-    logger.info("search_catalog - INICIO")
+    logger.info("[TOOL] search_catalog - INICIO")
 
     try:
         if not isinstance(query, str) or not query.strip():
@@ -214,7 +231,11 @@ def search_catalog(
             }
 
         try:
+            t_catalog = time.perf_counter()
             data = _catalog()
+            logger.info("[PERF] search_catalog - _catalog = %.3fs",
+            time.perf_counter() - t_catalog
+)
         except (OSError, json.JSONDecodeError) as error:
             return {
                 "status": "error",
@@ -263,7 +284,7 @@ def get_object_detail(key: str) -> dict[str, Any]:
     """
     logger = logging.getLogger(__name__)
     start = time.perf_counter()
-    logger.info("get_object_detail - INICIO")
+    logger.info("[TOOL] get_object_detail - INICIO")
 
     try:
 
@@ -285,7 +306,7 @@ def get_object_detail(key: str) -> dict[str, Any]:
     finally:
         elapsed = time.perf_counter() - start
         logger.info(
-            "get_object_detail - FIN - duración=%.3fs",
+            "[TOOL] get_object_detail - FIN - duración=%.3fs",
             elapsed,
         )
 
@@ -293,7 +314,7 @@ def get_catalog_summary() -> dict[str, Any]:
     """Devuelve conteos globales del catálogo para preguntas de resumen."""
     logger = logging.getLogger(__name__)
     start = time.perf_counter()
-    logger.info("get_catalog_summary - INICIO")
+    logger.info("[TOOL] get_catalog_summary - INICIO")
     try:
         try:
             data = _catalog()
