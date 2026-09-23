@@ -12,7 +12,7 @@ resources:
 images:
   - name: dashboard-image
     newName: ghcr.io/dainego/microstrategy-metadata-dashboard-dashboard
-    newTag: 8ce7a588935dcf97fd2b217b6b225d5616c51a18
+    newTag: d98fc5a7a548bb322ddab3dd3d55b9cb30843782
   - name: catalog-agent-image
     newName: ghcr.io/dainego/microstrategy-metadata-dashboard-agent
-    newTag: 8ce7a588935dcf97fd2b217b6b225d5616c51a18
+    newTag: d98fc5a7a548bb322ddab3dd3d55b9cb30843782
