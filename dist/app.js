@@ -15,6 +15,58 @@ const pathLabel = path => path.filter(Boolean).join(' / ');
 const getPath = obj => obj.locations?.[0]?.path?.filter(Boolean) || [];
 const debounce = fn => {let timer;return (...args)=>{clearTimeout(timer);timer=setTimeout(()=>fn(...args),160)}};
 
+function buildSubmodelSummary(){
+ // Cada fila representa un nodo de submodelo; también se conservan modelos sin submodelos.
+ // Los indicadores incluyen los objetos ubicados en ese nodo y en todos sus descendientes.
+ const groups=new Map();
+ const ensureGroup=path=>{
+  const clean=(path||[]).filter(Boolean);
+  if(clean.length<1)return null;
+  const key=JSON.stringify(clean);
+  if(!groups.has(key))groups.set(key,{model:clean[0],submodel:clean.length>1?clean.at(-1):'(Sin submodelo)',path:clean,attributes:new Set(),facts:new Set(),metrics:new Set(),filters:new Set(),tables:new Set()});
+  return groups.get(key);
+ };
+ const addObjectToPath=(obj,path)=>{
+  const clean=(path||[]).filter(Boolean);
+  const bucket=obj.type==='attribute'?'attributes':obj.type==='fact'?'facts':obj.type==='metric'?'metrics':obj.type==='filter'?'filters':null;
+  if(!bucket)return;
+  for(let depth=1;depth<=clean.length;depth++){
+   const group=ensureGroup(clean.slice(0,depth));
+   if(group)group[bucket].add(obj.key);
+  }
+ };
+ for(const obj of catalog.objects)for(const loc of obj.locations||[])addObjectToPath(obj,loc.path);
+ // Una tabla se atribuye a cada nodo donde se utiliza alguno de sus atributos o facts.
+ for(const table of catalog.tables){
+  const routeKeys=new Set();
+  for(const key of [...(table.attribute||[]),...(table.fact||[])]){
+   const obj=objects.get(key);
+   for(const loc of obj?.locations||[]){
+    const clean=(loc.path||[]).filter(Boolean);
+    for(let depth=1;depth<=clean.length;depth++)routeKeys.add(JSON.stringify(clean.slice(0,depth)));
+   }
+  }
+  for(const routeKey of routeKeys){
+   const group=groups.get(routeKey);
+   if(group)group.tables.add(table.key);
+  }
+ }
+ return [...groups.values()].sort((a,b)=>a.model.localeCompare(b.model,'es',{sensitivity:'base'})||a.path.join(' / ').localeCompare(b.path.join(' / '),'es',{sensitivity:'base'})).map(g=>({modelo:g.model,submodelo:g.submodel,ruta:g.path.join(' / '),tablas:g.tables.size,atributos:g.attributes.size,facts:g.facts.size,metricas:g.metrics.size,filtros:g.filters.size}));
+}
+function xmlEscape(value){return String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;')}
+function downloadSummaryExcel(){
+ if(!catalog)return;
+ const rows=buildSubmodelSummary();
+ const headers=['Modelo','Submodelo','Ruta Genérica del submodelo','Cantidad de Tablas','Cantidad de Atributos','Cantidad de Facts','Cantidad de Métricas','Cantidad de filtros'];
+ const fields=['modelo','submodelo','ruta','tablas','atributos','facts','metricas','filtros'];
+ const cell=(value,numeric=false,style='')=>`<Cell${style?` ss:StyleID="${style}"`:''}><Data ss:Type="${numeric?'Number':'String'}">${xmlEscape(value)}</Data></Cell>`;
+ const header=`<Row ss:Height="30">${headers.map(h=>cell(h,false,'Header')).join('')}</Row>`;
+ const body=rows.map(row=>`<Row>${fields.map((f,j)=>cell(row[f],j>=3,j===2?'Path':(j>=3?'Number':''))).join('')}</Row>`).join('');
+ const xml=`<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40"><DocumentProperties xmlns="urn:schemas-microsoft-com:office:office"><Title>Resumen de modelos y submodelos Strategy</Title><Subject>Inventario de metadata</Subject><Author>Metadata MicroStrategy</Author></DocumentProperties><Styles><Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/><Font ss:FontName="Arial" ss:Size="10"/></Style><Style ss:ID="Header"><Alignment ss:Vertical="Center" ss:WrapText="1"/><Font ss:FontName="Arial" ss:Size="10" ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#10283D" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#087F7E"/></Borders></Style><Style ss:ID="Number"><Alignment ss:Horizontal="Right" ss:Vertical="Center"/><NumberFormat ss:Format="0"/></Style><Style ss:ID="Path"><Alignment ss:Vertical="Center" ss:WrapText="1"/></Style></Styles><Worksheet ss:Name="Resumen submodelos"><Table ss:DefaultColumnWidth="115"><Column ss:Width="155"/><Column ss:Width="190"/><Column ss:Width="300"/><Column ss:Width="105"/><Column ss:Width="110"/><Column ss:Width="95"/><Column ss:Width="110"/><Column ss:Width="100"/>${header}${body}</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><FreezePanes/><FrozenNoSplit/><SplitHorizontal>1</SplitHorizontal><TopRowBottomPane>1</TopRowBottomPane><ActivePane>2</ActivePane></WorksheetOptions></Worksheet></Workbook>`;
+ const blob=new Blob(['\ufeff',xml],{type:'application/vnd.ms-excel;charset=utf-8'});
+ const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`strategy_resumen_modelos_submodelos_${new Date().toISOString().slice(0,10)}.xls`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
 function initialize(data){
  catalog=data;
  objects=new Map(data.objects.map(o=>[o.key,o]));
@@ -54,6 +106,7 @@ function initialize(data){
  }
  $('models').textContent=fmt(data.stats.models);$('submodels').textContent=fmt(data.stats.submodels);
  $('total').textContent=`${fmt(data.stats.objects)} objetos · ${fmt(data.tables.length)} tablas`;
+ $('exportSummaryExcel').disabled=false;
  renderTree();renderCatalog();registerAgentTools();
  if(typeof initializeLogical==='function')initializeLogical();
 }
@@ -201,6 +254,7 @@ document.addEventListener('click',event=>{
  if(button.id==='detailClose')closeDetail();
  if(button.id==='detailBack'&&state.history.length>1){state.history.pop();openDetail(state.history.at(-1),false)}
 });
+$('exportSummaryExcel').addEventListener('click',downloadSummaryExcel);
 $('resetScope').addEventListener('click',()=>{if(!catalog)return;state.modelQuery='';$('modelSearch').value='';setScope(null)});
 $('modelSearch').addEventListener('input',debounce(e=>{if(!catalog)return;state.modelQuery=e.target.value;renderTree()}));
 $('objectSearch').addEventListener('input',debounce(e=>{if(!catalog)return;state.query=e.target.value;state.page=1;renderCatalog()}));
